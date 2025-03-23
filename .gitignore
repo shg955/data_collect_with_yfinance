@@ -1,3 +1,4 @@
 airflow/logs/*
 airflow/postgres_data/*
 data/*
+__pycache__/
