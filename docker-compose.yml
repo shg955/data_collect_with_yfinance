@@ -4,16 +4,18 @@ services:
   postgres:
     image: postgres:14
     container_name: postgres
+    user: "0:0"
     environment:
       POSTGRES_USER: airflow
       POSTGRES_PASSWORD: airflow
       POSTGRES_DB: airflow
-    #ports:
-    #  - "5432:5432"
+    ports:
+      - "5432:5432"
     volumes:
       - ${POSTGRES_DATA_PATH}:/var/lib/postgresql/data
     networks:
       - airflow_network
+      
 
   airflow-init:
     image: apache/airflow:2.8.1
@@ -78,16 +80,35 @@ services:
     networks:
       - airflow_network
 
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:latest
+    container_name: mlflow
+    user: "0:0"
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - BACKEND_STORE_URI=postgresql+psycopg2://airflow:airflow@postgres:5432/mlflow_db
+      - ARTIFACT_ROOT=/mlflow/artifacts
+    ports:
+      - "5000:5000"  # MLflow UI 접근
+    volumes:
+      - ./mlflow_artifacts:/mlflow/artifacts
+    depends_on:
+      - airflow-scheduler
+    networks:
+      - airflow_network
+    command: mlflow ui --host 0.0.0.0 --port 5000
+    
   collector:
     build:
       context: ./collector
       dockerfile: Dockerfile
     container_name: collector
-    user: "50000:50000"  # Airflow 컨테이너의 사용자로 실행
+    user: "0:0"
+    #user: "50000:50000"  # Airflow 컨테이너의 사용자로 실행
     ports:
       - "${DATA_COLLECTOR_PORT}:8000"  # FastAPI 서버 포트 매핑
     depends_on:
-      - postgres
+      - airflow-scheduler
     volumes:
       - ${DATA_PATH}:/app/data
     networks:
@@ -97,11 +118,12 @@ services:
       context: ./data_GUI
       dockerfile: Dockerfile
     container_name: streamlit
-    user: "50000:50000"  # Airflow 컨테이너의 사용자로 실행
+    user: "0:0"
+    #user: "50000:50000"  # Airflow 컨테이너의 사용자로 실행
     ports:
       - "${GUI_STREAMLIT_PORT}:8501"  # Streamlit 기본 포트
     depends_on:
-      - postgres
+      - airflow-scheduler
     volumes:
       - ${DATA_PATH}:/app/data
     networks:

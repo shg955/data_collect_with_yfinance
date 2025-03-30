@@ -68,7 +68,10 @@ def fetch_new_data(ticker, start_date):
 async def main():
     # 상위 폴더에 data 디렉토리 생성
     data_dir = "./data"
-    os.makedirs(data_dir, exist_ok=True)
+    try:
+        os.makedirs(data_dir, exist_ok=True)
+    except:
+        pass
     tickers = get_ticker_list()
     print(f"Found {len(tickers)} tickers to process...")
 
@@ -81,7 +84,10 @@ async def main():
             data_path = f"./data/{ticker}.csv"
             update_data_path(ticker_id, data_path)
 
-        os.makedirs(os.path.dirname(data_path), exist_ok=True)
+        try:
+            os.makedirs(os.path.dirname(data_path), exist_ok=True)
+        except:
+            pass
 
         existing_df = fetch_existing_data(data_path)
         last_date = get_last_date(existing_df)
