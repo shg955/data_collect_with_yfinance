@@ -1,5 +1,9 @@
+airflow/dags/*
 airflow/logs/*
 airflow/postgres_data/*
 postgres/*
 data/*
 __pycache__/
+logs.txt'
+note.txt
+collector/scripts/*

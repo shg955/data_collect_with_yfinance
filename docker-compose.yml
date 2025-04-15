@@ -18,7 +18,10 @@ services:
       
 
   airflow-init:
-    image: apache/airflow:2.8.1
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
+    image: custom-airflow:2.8.1
     depends_on:
       - postgres
     user: "50000:50000"  # Airflow 컨테이너의 사용자로 실행
@@ -37,7 +40,10 @@ services:
       - airflow_network
 
   airflow-webserver:
-    image: apache/airflow:2.8.1
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
+    image: custom-airflow:2.8.1
     container_name: airflow-webserver
     restart: always
     depends_on:
@@ -60,7 +66,10 @@ services:
       - airflow_network
 
   airflow-scheduler:
-    image: apache/airflow:2.8.1
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
+    image: custom-airflow:2.8.1
     container_name: airflow-scheduler
     restart: always
     user: "50000:50000"  # Airflow 컨테이너의 사용자로 실행
@@ -92,12 +101,15 @@ services:
       - "5000:5000"  # MLflow UI 접근
     volumes:
       - ./mlflow_artifacts:/mlflow/artifacts
+      - ./mlflow_mlruns:/mlflow/mlruns
+      - ./mlflow_sqlite:/mlflow/sqlite
     depends_on:
       - airflow-scheduler
     networks:
       - airflow_network
-    command: mlflow ui --host 0.0.0.0 --port 5000
-    
+    #command: mlflow server --host 0.0.0.0 --port 5000 --default-artifact-root /mlflow/artifacts --backend-store-uri /mlflow/mlruns
+    #command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri sqlite:///mlflow/sqlite/mlflow.db --default-artifact-root file:/mlflow/artifacts
+    command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri sqlite:///mlflow/sqlite/mlflow.db --default-artifact-root http://ubinetlab.iptime.org:15000/mlflow-artifacts
   collector:
     build:
       context: ./collector
@@ -113,6 +125,13 @@ services:
       - ${DATA_PATH}:/app/data
     networks:
       - airflow_network
+    # 🔽 SSHFS & FUSE mount를 위한 권한
+    cap_add:
+      - SYS_ADMIN
+    devices:
+      - /dev/fuse
+    security_opt:
+      - apparmor:unconfined
   streamlit:
     build:
       context: ./data_GUI
